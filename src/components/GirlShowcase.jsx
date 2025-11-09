@@ -1,63 +1,50 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Spline from '@splinetool/react-spline';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { User, Info } from 'lucide-react';
 
-// 3D girl showcase under the hero. Tap/click left/right side to switch panels.
-// No on-screen turn buttons; you can freely rotate the model.
+// 3D girl showcase under the hero. Scroll subtly rotates the model and swaps panels.
 export default function GirlShowcase({
   scene = 'https://prod.spline.design/VJLoxp84lCdVfdZu/scene.splinecode',
 }) {
   const [side, setSide] = useState('right'); // 'left' -> Personal Info, 'right' -> Introduction
   const splineRef = useRef(null);
-
-  // Track tap vs drag to avoid switching while user is rotating the model
-  const downRef = useRef({ x: 0, y: 0, t: 0, isDown: false });
   const containerRef = useRef(null);
 
   const onLoad = useCallback((app) => {
     splineRef.current = app;
   }, []);
 
-  const onPointerDownCapture = (e) => {
-    downRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), isDown: true };
-  };
+  // Scroll-driven rotation and panel switching
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start end', 'end start'] });
+  const rotateY = useTransform(scrollYProgress, [0, 0.5, 1], ['-6deg', '0deg', '6deg']);
+  const yParallax = useTransform(scrollYProgress, [0, 1], ['0px', '20px']);
 
-  const onPointerUpCapture = (e) => {
-    const start = downRef.current;
-    downRef.current.isDown = false;
-    const dx = Math.abs(e.clientX - start.x);
-    const dy = Math.abs(e.clientY - start.y);
-    const dt = Date.now() - start.t;
-
-    // Treat as a tap if quick and with little movement
-    const isTap = dx < 12 && dy < 12 && dt < 350;
-    if (!isTap || !containerRef.current) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const midX = rect.left + rect.width / 2;
-    if (e.clientX < midX) {
-      setSide('left');
-    } else {
-      setSide('right');
-    }
-  };
+  useEffect(() => {
+    const unsub = scrollYProgress.on('change', (v) => {
+      if (v < 0.35) {
+        setSide('right'); // Intro
+      } else if (v >= 0.35) {
+        setSide('left'); // Personal info
+      }
+    });
+    return () => unsub();
+  }, [scrollYProgress]);
 
   return (
     <section className="relative py-8 sm:py-12">
       <div className="max-w-6xl mx-auto px-4">
-        <div
+        <motion.div
           ref={containerRef}
-          className="relative w-full h-[420px] sm:h-[520px] overflow-hidden rounded-3xl border border-white/10 bg-black/40"
-          onPointerDownCapture={onPointerDownCapture}
-          onPointerUpCapture={onPointerUpCapture}
+          style={{ rotateY, y: yParallax }}
+          className="relative w-full h-[420px] sm:h-[520px] overflow-hidden rounded-3xl border border-white/10 bg-black/40 will-change-transform"
         >
           <Spline onLoad={onLoad} scene={scene} style={{ width: '100%', height: '100%' }} />
 
           {/* Soft vignette that does not block interaction */}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          {/* Info panel that changes with side */}
+          {/* Info panel that changes with scroll side */}
           <AnimatePresence mode="wait">
             {side === 'right' ? (
               <motion.div
@@ -71,10 +58,9 @@ export default function GirlShowcase({
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 rounded-lg bg-white/10 p-2"><Info size={18} /></div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold">Hi, I’m your 3D guide</h3>
+                    <h3 className="text-base sm:text-lg font-semibold">Hi, I’m Astraea</h3>
                     <p className="mt-1 text-sm text-white/80">
-                      Welcome to my world of interactive design and frontend engineering. I love crafting smooth, immersive
-                      3D experiences with React, Spline, and delightful motion.
+                      Crafting beauty through code and imagination — blending elegant UI, motion, and playful 3D to build immersive web experiences.
                     </p>
                   </div>
                 </div>
@@ -93,18 +79,18 @@ export default function GirlShowcase({
                   <div>
                     <h3 className="text-base sm:text-lg font-semibold">Personal Info</h3>
                     <ul className="mt-1 text-sm text-white/80 space-y-1">
-                      <li>• Based in: Your City</li>
-                      <li>• Focus: WebGL, UI Engineering, Design Systems</li>
-                      <li>• Available for: Freelance & Full-time</li>
-                      <li>• Email: hello@example.com</li>
+                      <li>• Skills: React, Three.js/Spline, Framer Motion, Tailwind</li>
+                      <li>• Education: B.Des — Interaction & Visual Design</li>
+                      <li>• Interests: Generative art, shaders, typography</li>
+                      <li>• Location: Remote-friendly</li>
                     </ul>
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-        <p className="mt-3 text-center text-sm text-white/60">Tip: Tap/click the left or right side to switch info. You can freely rotate the 3D model.</p>
+        </motion.div>
+        <p className="mt-3 text-center text-sm text-white/60">Scroll to subtly rotate the 3D avatar. As you continue, personal info slides in. Contact follows below.</p>
       </div>
     </section>
   );

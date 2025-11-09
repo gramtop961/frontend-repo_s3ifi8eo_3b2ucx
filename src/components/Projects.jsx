@@ -3,21 +3,21 @@ import { ExternalLink } from 'lucide-react';
 
 const projects = [
   {
-    title: 'Interactive 3D Landing',
-    description: 'A playful hero section powered by Spline with smooth scroll and motion.',
-    tags: ['React', 'Spline', 'Framer Motion'],
+    title: 'Aurora UI',
+    description: 'Glassmorphism interface kit with motion presets and themes.',
+    tags: ['React', 'Tailwind', 'Framer'],
     href: '#',
   },
   {
-    title: 'Realtime Dashboard',
-    description: 'High-performance charts and live updates with WebSockets.',
-    tags: ['React', 'Tailwind', 'API'],
+    title: 'Nebula 3D',
+    description: 'Interactive hero built with Spline and scroll-driven motion.',
+    tags: ['React', 'Spline', 'Scroll'],
     href: '#',
   },
   {
-    title: 'Design System',
-    description: 'A reusable component library with accessibility at its core.',
-    tags: ['TypeScript', 'Storybook', 'A11y'],
+    title: 'Pulse Analytics',
+    description: 'Realtime dashboard with crisp charts and live updates.',
+    tags: ['React', 'API', 'WebSockets'],
     href: '#',
   },
 ];
