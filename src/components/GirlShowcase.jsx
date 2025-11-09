@@ -3,39 +3,59 @@ import Spline from '@splinetool/react-spline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Info } from 'lucide-react';
 
-// 3D girl showcase under the hero. Clicking left/right turns the context panel.
+// 3D girl showcase under the hero. Tap/click left/right side to switch panels.
+// No on-screen turn buttons; you can freely rotate the model.
 export default function GirlShowcase({
   scene = 'https://prod.spline.design/VJLoxp84lCdVfdZu/scene.splinecode',
 }) {
   const [side, setSide] = useState('right'); // 'left' -> Personal Info, 'right' -> Introduction
   const splineRef = useRef(null);
 
+  // Track tap vs drag to avoid switching while user is rotating the model
+  const downRef = useRef({ x: 0, y: 0, t: 0, isDown: false });
+  const containerRef = useRef(null);
+
   const onLoad = useCallback((app) => {
     splineRef.current = app;
-    // Optionally you can preload or set camera, but we keep it simple and stable.
   }, []);
 
-  const handleLeft = () => setSide('left');
-  const handleRight = () => setSide('right');
+  const onPointerDownCapture = (e) => {
+    downRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), isDown: true };
+  };
+
+  const onPointerUpCapture = (e) => {
+    const start = downRef.current;
+    downRef.current.isDown = false;
+    const dx = Math.abs(e.clientX - start.x);
+    const dy = Math.abs(e.clientY - start.y);
+    const dt = Date.now() - start.t;
+
+    // Treat as a tap if quick and with little movement
+    const isTap = dx < 12 && dy < 12 && dt < 350;
+    if (!isTap || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    if (e.clientX < midX) {
+      setSide('left');
+    } else {
+      setSide('right');
+    }
+  };
 
   return (
     <section className="relative py-8 sm:py-12">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="relative w-full h-[420px] sm:h-[520px] overflow-hidden rounded-3xl border border-white/10 bg-black/40">
+        <div
+          ref={containerRef}
+          className="relative w-full h-[420px] sm:h-[520px] overflow-hidden rounded-3xl border border-white/10 bg-black/40"
+          onPointerDownCapture={onPointerDownCapture}
+          onPointerUpCapture={onPointerUpCapture}
+        >
           <Spline onLoad={onLoad} scene={scene} style={{ width: '100%', height: '100%' }} />
 
           {/* Soft vignette that does not block interaction */}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-          {/* Click zones for left/right to change context */}
-          <div className="absolute inset-y-0 left-0 w-1/2 cursor-pointer" onClick={handleLeft} aria-label="Show personal info" />
-          <div className="absolute inset-y-0 right-0 w-1/2 cursor-pointer" onClick={handleRight} aria-label="Show introduction" />
-
-          {/* Small helper controls for accessibility */}
-          <div className="absolute top-4 right-4 z-10 flex gap-2">
-            <button onClick={handleLeft} className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-xs text-white/90 backdrop-blur hover:bg-white/10">Turn Left</button>
-            <button onClick={handleRight} className="rounded-md border border-white/15 bg-black/40 px-3 py-1.5 text-xs text-white/90 backdrop-blur hover:bg-white/10">Turn Right</button>
-          </div>
 
           {/* Info panel that changes with side */}
           <AnimatePresence mode="wait">
@@ -84,7 +104,7 @@ export default function GirlShowcase({
             )}
           </AnimatePresence>
         </div>
-        <p className="mt-3 text-center text-sm text-white/60">Tip: Tap/click the left or right side to switch info.</p>
+        <p className="mt-3 text-center text-sm text-white/60">Tip: Tap/click the left or right side to switch info. You can freely rotate the 3D model.</p>
       </div>
     </section>
   );
